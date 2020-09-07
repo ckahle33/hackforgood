@@ -1,13 +1,47 @@
 <html>
   <head>
     {% block head %}
-        <link rel="stylesheet" href="https://unpkg.com/purecss@2.0.3/build/pure-min.css" integrity="sha384-cg6SkqEOCV1NbJoCu11+bm0NvBRc8IYLRGXkmNrqUBfTjmMYwNKPWBTIKyw9mHNJ" crossorigin="anonymous">
-        <title>{% block title %}{% endblock %} - Hack For Good</title>
+      <link rel="stylesheet" href="https://unpkg.com/spectre.css/dist/spectre.min.css">
+      <title>{% block title %}{% endblock %} - Hack For Good</title>
     {% endblock %}
+      <meta name="viewport" content="width=device-width, initial-scale=1">
   </head>
   <body>
-    <div id="content">{% block content %}{% endblock %}</div>
-    <div id="footer">
+  <div class="container">
+    <header class="navbar">
+      <section class="navbar-section">
+        <a href="..." class="navbar-brand mr-2">Hack for Good</a>
+        <a href="..." class="btn btn-link">Projects</a>
+        <a href="..." class="btn btn-link">Organizations</a>
+        <a href="..." class="btn btn-link">Developers</a>
+        <a href="..." class="btn btn-link">By Technology</a>
+      </section>
+      <section class="navbar-section">
+        <a href="...">{{ session.get('username') }}</a>
+        {% if user %}
+          <img class="avatar" src={{ user.avatar_url }} />
+        {% endif %}
+        <!-- dropdown button group -->
+        <div class="dropdown">
+          <a href="#" class="btn btn-link dropdown-toggle" tabindex="0">
+            Login<i class="icon icon-caret"></i>
+          </a>
+          <!-- menu component -->
+          <ul class="menu">
+
+          <li>
+              <a href="/login">GitHub</a>
+          </li>
+          </ul>
+        </div>
+            <!-- menu component -->
+      </section>
+    </header>
+
+  </div>
+      <div class="pure-g">{% block content %}{% endblock %}</div>
+      <div class="footer">
+
       {% block footer %}
       &copy; Copyright 2010 by <a href="http://domain.invalid/">you</a>.
       {% endblock %}

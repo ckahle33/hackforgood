@@ -8,4 +8,8 @@ h1 {
   font-size: 40px;
 }
 
+.avatar {
+    max-width: 40px;
+    border-radius: 50%;
+}
 /*# sourceMappingURL=app.css.map */

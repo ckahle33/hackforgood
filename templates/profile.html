@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% block title %}Index{% endblock %}
+{% block title %}Onboarding{% endblock %}
 {% block head %}
   {{ super() }}
   <style type="text/css">
@@ -7,13 +7,7 @@
   </style>
 {% endblock %}
 {% block content %}
-  <h1>Index</h1>
+  <h1>Profile</h1>
   <p class="important">
-    Welcome on my awesome homepage.
-    {% if user %}
-      Logged in as {{user.username}}
-    {% endif %}
+    Show Developer tags, ability to add new tags
 {% endblock %}
-
-
-<h1>Hack For Good</h1>
