@@ -7,8 +7,27 @@
   </style>
 {% endblock %}
 {% block content %}
+<div class="container">
   <h1>Organizations</h1>
-  <p class="important">
-    List orgs here. Users have to create and claim orgs with some proof of working there.
+
+  {% for o in orgs %}
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title h5">
+          {{o.name}}
+        </div>
+        <div class="card-image" style="max-width: 300px;">
+          <img src={{o.image_url}} class="img-responsive">
+        </div>
+        <div class="card-subtitle text-gray">...</div>
+          </div>
+          <div class="card-body">
+            {{o.description}}
+          </div>
+      </div>
+  </div>
+  {% endfor %}
+
+</div>
 {% endblock %}
 

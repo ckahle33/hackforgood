@@ -7,8 +7,27 @@
   </style>
 {% endblock %}
 {% block content %}
-  <h1>Index</h1>
-  <p class="important">
-    Loop tags / technologies here from Github
+<div class="container">
+  <h1>Tags</h1>
+
+  {% for t in tags %}
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title h5">
+          {{t.name}}
+        </div>
+        <div class="card-image" style="max-width: 300px;">
+          <img src={{t.image_url}} class="img-responsive">
+        </div>
+        <div class="card-subtitle text-gray">...</div>
+          </div>
+          <div class="card-body">
+            {{t.description}}
+          </div>
+      </div>
+  </div>
+  {% endfor %}
+
+</div>
 
 {% endblock %}
