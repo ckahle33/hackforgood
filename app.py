@@ -51,6 +51,15 @@ github = oauth.register(
     api_base_url='https://api.github.com'
 )
 
+@app.cli.command('seed')
+
+def seed():
+    project = Project("Test Project", "Test description.....", "https://source.unsplash.com/random")
+    db.session.add(project)
+    org = Organization("Test Org", "Test description.....", "https://source.unsplash.com/random")
+    db.seesion.add(org)
+    db.session.commit()
+
 @app.route('/')
 def index():
     if session.get('username') is not None:
