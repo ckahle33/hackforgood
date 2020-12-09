@@ -1,7 +1,0 @@
-{
-  "dependencies": {
-    "sass": "^1.26.10",
-    "spectre.css": "^0.5.9",
-    "vue": "^2.6.12"
-  }
-}
