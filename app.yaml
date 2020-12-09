@@ -3,9 +3,12 @@ runtime: python38 # or python37 for Python 3.7
 instance_class: F1
 
 env_variables:
-  CLIENT_ID: 'Iv1.7a135c29c0be40e9'
-  CLIENT_SECRET: '6f46810a3a9d10a278fe768056caf86ed2abb545'
-  DATABASE_URI: 'postgres+pg8000://postgres:K0ghxr4Ng1tIArjn@/hackforgood?unix_sock=cloudsql/hackforgood-288806:us-central1:hackforgood-pg/.s.PGSQL.5432'
+  GITHUB_CLIENT_ID: 'Iv1.7a135c29c0be40e9'
+  GITHUB_CLIENT_SECRET: '6f46810a3a9d10a278fe768056caf86ed2abb545'
+  DB_USER: 'postgres'
+  DB_PASS: 'K0ghxr4Ng1tIArjn'
+  DB_NAME: 'hackforgood'
+  DB_CONNECTION: 'hackforgood-288806:us-central1:hackforgood-pg'
 
 handlers:
 - url: /.*
