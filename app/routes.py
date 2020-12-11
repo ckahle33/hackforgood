@@ -2,6 +2,19 @@ from app import app, db
 from app.models import User, Project, Organization, Tag
 from flask import render_template, url_for, session
 
+from authlib.integrations.flask_client import OAuth
+import os
+
+oauth = OAuth(app)
+github = oauth.register(
+    name='github',
+    authorize_url='https://github.com/login/oauth/authorize',
+    access_token_url='https://github.com/login/oauth/access_token',
+    client_id=os.getenv('GITHUB_CLIENT_ID'),
+    client_secret=os.getenv('GITHUB_CLIENT_SECRET'),
+    api_base_url='https://api.github.com'
+)
+
 @app.cli.command('seed')
 
 def seed():
@@ -29,6 +42,7 @@ def onboarding():
 def login():
     redirect_uri = url_for('authorize', _external=True)
     return github.authorize_redirect(redirect_uri)
+
 @app.route('/projects')
 def projects():
     projects = Project.query.all()
@@ -41,6 +55,10 @@ def projects():
 def organizations():
     orgs=Organization.query.all()
     return render_template('organizations.html', orgs=orgs)
+
+@app.route('/developers')
+def developers():
+    return render_template('developers.html')
 
 @app.route('/tags')
 def tags():
