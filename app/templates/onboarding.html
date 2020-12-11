@@ -1,4 +1,4 @@
-{% extends "layout.html" %}
+{% extends "blank-layout.html"%}
 {% block title %}Onboarding{% endblock %}
 {% block head %}
   {{ super() }}
@@ -7,9 +7,19 @@
   </style>
 {% endblock %}
 {% block content %}
-  <h1>Index</h1>
-  <p class="important">
-    Welcome on my awesome homepage.
+  <form style="max-width: 400px; margin: 0 auto;">
+  <h1>Logo Here!</h1>
+    <div class="mb-3">
+      <label for="exampleInputEmail1" class="form-label">Email address</label>
+      <input type="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp">
+      <div id="emailHelp" class="form-text">We'll never share your email with anyone else.</div>
+    </div>
+    <div class="mb-3">
+      <label for="exampleInputPassword1" class="form-label">Breif Intro</label>
+      <textarea type="password" class="form-control" id="exampleInputPassword1"></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+  </form>
 {% endblock %}
 
-<h1>Onboarding</h1>
+
