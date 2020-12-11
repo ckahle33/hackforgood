@@ -10,23 +10,70 @@
 <div class="container">
   <h1>Organizations</h1>
 
-  {% for o in orgs %}
-    <div class="card">
-      <div class="card-header">
-        <div class="card-title h5">
-          {{o.name}}
+  <div class="row row-cols-1 row-cols-md-3 g-4">
+    <div class="col">
+      <div class="card">
+        <img src="https://source.unsplash.com/random" style="max-width: 170px;" alt="...">
+        <div class="card-body">
+          <h5 class="card-title">Organization 1</h5>
+          <p class="card-text">This is a longer card with supporting text below as a natural lead-in to additional content. This content is a little bit longer.</p>
+          <a href="#">View Projects (3)</a>
         </div>
-        <div class="card-image" style="max-width: 300px;">
-          <img src={{o.image_url}} class="img-responsive">
-        </div>
-        <div class="card-subtitle text-gray">...</div>
-          </div>
-          <div class="card-body">
-            {{o.description}}
-          </div>
       </div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <img src="https://source.unsplash.com/random" style="max-width: 170px;" alt="...">
+        <div class="card-body">
+          <h5 class="card-title">Organization 2</h5>
+          <p class="card-text">This is a longer card with supporting text below as a natural lead-in to additional content. This content is a little bit longer.</p>
+          <a href="#">View Projects (3)</a>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <img src="https://source.unsplash.com/random" style="max-width: 170px;" alt="...">
+        <div class="card-body">
+          <h5 class="card-title">Organization 3</h5>
+          <p class="card-text">This is a longer card with supporting text below as a natural lead-in to additional content. This content is a little bit longer.</p>
+          <a href="#">View Projects (3)</a>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="card">
+        <img src="https://source.unsplash.com/random" style="max-width: 170px;" alt="...">
+        <div class="card-body">
+          <h5 class="card-title">Organization 4</h5>
+          <p class="card-text">This is a longer card with supporting text below as a natural lead-in to additional content. This content is a little bit longer.</p>
+          <a href="#">View Projects (3)</a>
+        </div>
+      </div>
+    </div>
   </div>
-  {% endfor %}
+
+
+
+
+
+  <!-- {% for o in orgs %} -->
+  <!--   <div class="card"> -->
+  <!--     <div class="card-header"> -->
+  <!--       <div class="card-title h5"> -->
+  <!--         {{o.name}} -->
+  <!--       </div> -->
+  <!--       <div class="card-image" style="max-width: 300px;"> -->
+  <!--         <img src={{o.image_url}} class="img-responsive"> -->
+  <!--       </div> -->
+  <!--       <div class="card-subtitle text-gray">...</div> -->
+  <!--         </div> -->
+  <!--         <div class="card-body"> -->
+  <!--           {{o.description}} -->
+  <!--         </div> -->
+  <!--     </div> -->
+  <!-- </div> -->
+  <!-- {% endfor %} -->
 
 </div>
 {% endblock %}

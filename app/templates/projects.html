@@ -10,23 +10,71 @@
 <div class="container">
   <h1>Projects</h1>
 
-    {% for p in projects %}
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title h5">
-            {{p.name}}
-          </div>
-          <div class="card-image" style="max-width: 300px;">
-            <img src={{p.image_url}} class="img-responsive">
-          </div>
-          <div class="card-subtitle text-gray">...</div>
-            </div>
-            <div class="card-body">
-              {{p.description}}
-            </div>
+    <div class="card mb-3" >
+      <div class="row g-0">
+        <div class="col-md-2">
+          <img src="https://source.unsplash.com/random" style="max-width: 170px;" alt="...">
         </div>
+        <div class="col-md-9">
+          <div class="card-body">
+            <h5 class="card-title">Test Project 1</h5>
+            <h5 class="card-title">
+              <a href="#">Organization Name </a>
+            </h5>
+            <p class="card-text">This is a wider card with supporting text below as a natural lead-in to additional content. This content is a little bit longer.</p>
+            <p class="card-text"><small class="text-muted">Last updated 3 mins ago</small></p>
+          </div>
+          <div class="card-footer">
+            <span class="badge rounded-pill bg-primary">JS</span>
+            <span class="badge rounded-pill bg-light text-dark">Python</span>
+            <span class="badge rounded-pill bg-info text-dark">Wordpress</span>
+            <span class="badge rounded-pill bg-success">SQL</span>
+          </div>
+        </div>
+      </div>
     </div>
-    {% endfor %}
+
+    <div class="card mb-3">
+      <div class="row g-0">
+        <div class="col-md-2">
+          <img src="https://source.unsplash.com/random" style="max-width: 170px;" alt="...">
+        </div>
+        <div class="col-md-9">
+          <div class="card-body">
+            <h5 class="card-title">Test Project 1</h5>
+            <h5 class="card-title">
+              <a href="#">Organization Name </a>
+            </h5>
+            <p class="card-text">This is a wider card with supporting text below as a natural lead-in to additional content. This content is a little bit longer.</p>
+            <p class="card-text"><small class="text-muted">Last updated 3 mins ago</small></p>
+          </div>
+          <div class="card-footer">
+            <span class="badge rounded-pill bg-primary">JS</span>
+            <span class="badge rounded-pill bg-light text-dark">Python</span>
+            <span class="badge rounded-pill bg-info text-dark">Wordpress</span>
+            <span class="badge rounded-pill bg-success">SQL</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- {% for p in projects %} -->
+    <!--   <div class="card"> -->
+    <!--     <div class="card-header"> -->
+    <!--       <div class="card-title h5"> -->
+    <!--         {{p.name}} -->
+    <!--       </div> -->
+    <!--       <div class="card-image" style="max-width: 300px;"> -->
+    <!--         <img src={{p.image_url}} class="img-responsive"> -->
+    <!--       </div> -->
+    <!--       <div class="card-subtitle text-gray">...</div> -->
+    <!--         </div> -->
+    <!--         <div class="card-body"> -->
+    <!--           {{p.description}} -->
+    <!--         </div> -->
+    <!--     </div> -->
+    <!-- </div> -->
+    <!-- {% endfor %} -->
 
 </div>
 {% endblock %}
