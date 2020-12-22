@@ -1,18 +1,28 @@
 from app import app, db
 from app.models import User, Project, Organization, Tag
-from flask import render_template, url_for, session
+from flask import render_template, url_for, session, redirect
 
 from authlib.integrations.flask_client import OAuth
 import os
 
 oauth = OAuth(app)
-github = oauth.register(
+oauth.register(
     name='github',
     authorize_url='https://github.com/login/oauth/authorize',
     access_token_url='https://github.com/login/oauth/access_token',
     client_id=os.getenv('GITHUB_CLIENT_ID'),
     client_secret=os.getenv('GITHUB_CLIENT_SECRET'),
     api_base_url='https://api.github.com'
+)
+
+oauth.register(
+    name='google',
+    client_id=os.getenv('GOOGLE_CLIENT_ID'),
+    client_secret=os.getenv('GOOGLE_CLIENT_SECRECT'),
+    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
+    client_kwargs={
+        'scope': 'openid email profile'
+    }
 )
 
 @app.cli.command('seed')
@@ -27,8 +37,8 @@ def seed():
 @app.route('/')
 @app.route('/index')
 def index():
-    if session.get('username') is not None:
-        user = User.query.filter_by(username=session.get('username')).first()
+    if session.get('user') is not None:
+        user = User.query.filter_by(username=session.get('user')).first()
         return render_template('index.html', user=user)
     else:
         return render_template('index.html')
@@ -38,10 +48,15 @@ def index():
 def onboarding():
     return render_template('onboarding.html')
 
-@app.route('/login')
-def login():
-    redirect_uri = url_for('authorize', _external=True)
-    return github.authorize_redirect(redirect_uri)
+@app.route('/login/<name>')
+def login(name):
+
+    client = oauth.create_client(name)
+    if not client:
+        abort(404)
+
+    redirect_uri = url_for('auth', name=name, _external=True)
+    return client.authorize_redirect(redirect_uri)
 
 @app.route('/projects')
 def projects():
@@ -65,25 +80,50 @@ def tags():
     tags = Tag.query.all()
     return render_template('tags.html', tags=tags)
 
-@app.route('/authorize')
-def authorize():
-    token = github.authorize_access_token()
-    # you can save the token into database
-    resp = oauth.github.get('user', token=token)
-    profile = resp.json()
-    if not User.query.filter_by(username=profile['login']):
-        user = User(username=profile['login'],
+@app.route('/auth/<name>')
+def auth(name):
+    client = oauth.create_client(name)
+    if not client:
+        abort(404)
+
+    token = client.authorize_access_token()
+    if 'id_token' in token:
+        profile = client.parse_id_token(token)
+        build_user_and_login(profile)
+    else:
+        resp = client.get('user', token=token)
+        json = resp.json()
+        profile = normalize_github_user(json)
+        build_user_and_login(profile)
+    return redirect('/')
+
+def build_user_and_login(profile):
+    if User.query.filter_by(username=profile['name']) != None:
+        session['user'] = profile['name']
+    else:
+        user = User(username=profile['name'],
                     email=profile['email'],
-                    auth_token=token['access_token'],
-                    avatar_url=profile['avatar_url'],
-                    location=profile['location'])
+                    auth_token=profile['at_hash'],
+                    avatar_url=profile['picture'],
+                    location=profile['locale'])
         db.session.add(user)
         db.session.commit()
-    session["username"] = profile['login']
-    return render_template('index.html')
+        session['user'] = profile['name']
 
-@app.route('/github')
-def show_github_profile():
-    resp = oauth.github.get('user')
-    profile = resp.json()
-    return render_template('github.html', profile=profile)
+def normalize_github_user(data):
+    # make github account data into UserInfo format
+    params = {
+        'sub': data.get('node_id'),
+        'name': data.get('login'),
+        'email': data.get('email'),
+        'at_hash': data.get('access_token'),
+        'locale': data.get('location'),
+        'picture': data.get('avatar_url'),
+        'preferred_username': data.get('login'),
+    }
+    return params
+
+@app.route('/logout')
+def logout():
+    session.pop('user', None)
+    return redirect('/')
