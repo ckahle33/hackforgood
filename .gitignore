@@ -1,5 +1,6 @@
 venv/
 node_modules/
+app.yaml
 __pycache__/
 .env
 .idea

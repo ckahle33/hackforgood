@@ -1,0 +1,17 @@
+runtime: python38 # or python37 for Python 3.7
+
+instance_class: F1
+
+env_variables:
+  GITHUB_CLIENT_ID:
+  GITHUB_CLIENT_SECRET:
+  DB_USER:
+  DB_PASS:
+  DB_NAME:
+  DB_CONNECTION:
+
+handlers:
+- url: /.*
+  secure: always
+  redirect_http_response_code: 301
+  script: auto
