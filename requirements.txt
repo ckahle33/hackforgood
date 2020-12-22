@@ -1,9 +1,9 @@
 Flask>=1.1.2
 Flask-WTF>=0.14.3
 Authlib>=0.14.3
+loginpass>=0.5
 Flask-SQLAlchemy>=2.4.4
 psycopg2>=2.8.5
-pg8000>=1.1.6
 Flask-Migrate
 python-dotenv>=0.14.0
 requests

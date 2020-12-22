@@ -33,16 +33,22 @@
             </ul>
             <section class="d-flex">
               <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                {% if user %}
+                {% if session['user'] %}
                   <li class="nav-item">
                     <a class="nav-link" href="#">
-                      <span>{{ session.get('username') }}</span>
+                      <span>{{ session['user'] }}</span>
                       <img class="avatar" src={{ user.avatar_url }} />
                     </a>
                   </li>
+                  <li class="nav-item">
+                    <a class="nav-link" href="/logout">Logout</a>
+                  </li>
                 {% else %}
                   <li class="nav-item">
-                    <a href="/login" class="nav-link" tabindex="0">Login</a>
+                    <a href="/login/github" class="nav-link" tabindex="0">GitHub Login</a>
+                  </li>
+                  <li class="nav-item">
+                    <a href="/login/google" class="nav-link" tabindex="0">Google Login</a>
                   </li>
                 {% endif %}
               </ul>
