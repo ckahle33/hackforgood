@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Applicants &middot; {{ site_name }}{% endblock %}
+{% block robots %}noindex,nofollow{% endblock %}
+{% block content %}
+<a href="/dashboard">&larr; Dashboard</a>
+<h1>Applicants for {{ job.title }}</h1>
+{% for a in apps %}
+<div class="card">
+  <div class="row"><h3>{{ a.name }}</h3><span class="muted">{{ a.created_at.strftime('%b %d, %Y') }}</span></div>
+  <p><a href="mailto:{{ a.email }}">{{ a.email }}</a> &middot; <a href="{{ a.resume_url }}" rel="noopener nofollow" target="_blank">Resume / profile</a></p>
+  {% if a.note %}<p class="prose">{{ a.note }}</p>{% endif %}
+  <form method="post" action="/dashboard/applications/{{ a.id }}/status" class="inline-form">
+    <select name="status" aria-label="Status">{% for s in statuses %}<option {{ 'selected' if a.status == s }}>{{ s }}</option>{% endfor %}</select>
+    <button class="btn btn-sm btn-alt">Update</button>
+  </form>
+</div>
+{% else %}<div class="empty">No applicants yet.</div>{% endfor %}
+{% endblock %}

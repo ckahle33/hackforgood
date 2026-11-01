@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Your organization &middot; {{ site_name }}{% endblock %}
+{% block robots %}noindex,nofollow{% endblock %}
+{% block content %}
+<section class="narrow">
+  <h1>Tell us about your organization</h1>
+  {% for e in errors %}<p class="error">{{ e }}</p>{% endfor %}
+  <form method="post" class="form">
+    <label>Organization name <input name="name" required maxlength="150" value="{{ v.name }}"></label>
+    <label>Mission <textarea name="mission" rows="5" required>{{ v.mission }}</textarea></label>
+    <label>Website <input name="website" type="url" placeholder="https://" value="{{ v.website }}"></label>
+    <label>Location <input name="location" value="{{ v.location }}"></label>
+    <button class="btn">Save organization</button>
+  </form>
+</section>
+{% endblock %}

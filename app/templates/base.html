@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ site_name }}{% endblock %}</title>
+  <meta name="description" content="{% block desc %}Find work that makes the world better. Jobs, internships and volunteer roles at non-profits.{% endblock %}">
+  <meta name="robots" content="{% block robots %}index,follow{% endblock %}">
+  <meta name="theme-color" content="#1f6b4a">
+  <link rel="canonical" href="{{ canonical }}">
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  <meta property="og:site_name" content="{{ site_name }}">
+  <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+  <meta property="og:title" content="{{ self.title()|striptags|e }}">
+  <meta property="og:description" content="{{ self.desc()|striptags|e }}">
+  <meta property="og:url" content="{{ canonical }}">
+  <meta property="og:image" content="{{ og_image }}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{ self.title()|striptags|e }}">
+  <meta name="twitter:description" content="{{ self.desc()|striptags|e }}">
+  <meta name="twitter:image" content="{{ og_image }}">
+  {% block jsonld %}{% endblock %}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/app.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.1/dist/cdn.min.js"></script>
+</head>
+<body>
+  <header class="nav">
+    <div class="wrap nav-in">
+      <a class="brand" href="/">{{ site_name }}</a>
+      <nav>
+        <a href="/jobs">Browse jobs</a>
+        {% if user %}
+          <a href="/applications">My applications</a>
+          <a href="/dashboard">My organization</a>
+          {% if is_admin(user) %}<a href="/admin" class="admin-link">Admin</a>{% endif %}
+          <form method="post" action="/logout" class="inline"><button class="link">Sign out</button></form>
+        {% else %}
+          <a class="btn btn-sm" href="/login">Post a job</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+  <main class="wrap">{% block content %}{% endblock %}</main>
+  <footer class="foot">
+    <div class="wrap">Work that matters, for people who care. &middot; {{ site_name }}</div>
+  </footer>
+</body>
+</html>

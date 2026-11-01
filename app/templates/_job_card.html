@@ -1,0 +1,9 @@
+<a class="card job" href="/jobs/{{ job.id }}">
+  <div class="job-org">{{ job.org.name }}</div>
+  <h3>{{ job.title }}</h3>
+  <div class="tags">
+    <span class="tag cause">{{ job.cause }}</span>
+    <span class="tag">{{ job.job_type }}</span>
+    <span class="tag">{% if job.remote %}Remote{% endif %}{% if job.remote and job.location %} / {% endif %}{{ job.location }}</span>
+  </div>
+</a>

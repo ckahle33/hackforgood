@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{{ site_name }} - Non-profit jobs, internships and volunteer roles{% endblock %}
+{% block content %}
+<section class="hero">
+  <h1>Do work that makes<br>the world <em>better.</em></h1>
+  <p>Jobs, internships and volunteer roles at non-profits that need people like you.</p>
+  <form action="/jobs" class="search">
+    <input name="q" placeholder="Role, skill or organization" aria-label="Search jobs">
+    <button class="btn">Find work</button>
+  </form>
+</section>
+
+<section>
+  <h2>Choose your cause</h2>
+  <div class="chips">
+    {% for c in causes %}<a class="chip" href="/jobs?cause={{ c|urlencode }}">{{ c }}</a>{% endfor %}
+  </div>
+</section>
+
+<section>
+  <h2>Newly posted</h2>
+  {% if jobs %}
+    <div class="grid">{% for job in jobs %}{% include "_job_card.html" %}{% endfor %}</div>
+    <p><a href="/jobs">See all jobs &rarr;</a></p>
+  {% else %}
+    <div class="empty">No listings yet. Be the first &mdash; <a href="/login">post a job for your non-profit</a>.</div>
+  {% endif %}
+</section>
+
+<section class="cta">
+  <h2>Hiring for a good cause?</h2>
+  <p>Posting is free. Share your mission and reach people who want to help.</p>
+  <a class="btn" href="/login">Post a job</a>
+</section>
+{% endblock %}

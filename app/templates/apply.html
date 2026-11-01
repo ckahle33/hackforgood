@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Apply: {{ job.title }} &middot; {{ site_name }}{% endblock %}
+{% block robots %}noindex,nofollow{% endblock %}
+{% block content %}
+<section class="narrow">
+  <a href="/jobs/{{ job.id }}">&larr; Back to listing</a>
+  <h1>Apply to {{ job.org.name }}</h1>
+  <p class="muted">{{ job.title }}</p>
+  {% if existing %}
+    <div class="notice">You applied to this job on {{ existing.created_at.strftime('%b %d, %Y') }}. <a href="/applications">View your applications</a>.</div>
+  {% else %}
+  {% for e in errors %}<p class="error">{{ e }}</p>{% endfor %}
+  <form method="post" class="form">
+    <label>Your name <input name="name" required maxlength="150" value="{{ v.name }}"></label>
+    <label>Email <input name="email" type="email" required maxlength="200" value="{{ v.email }}"></label>
+    <label>Link to your resume or LinkedIn <input name="resume_url" type="url" required placeholder="https://" value="{{ v.resume_url }}"></label>
+    <label>Anything you'd like them to know (optional) <textarea name="note" rows="5" maxlength="2000">{{ v.note }}</textarea></label>
+    <input name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <p class="muted small">Your name, email, link and note are shared with {{ job.org.name }} only. You can withdraw
+      your application, which deletes it, any time from <em>My applications</em>.</p>
+    <button class="btn">Send application</button>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}

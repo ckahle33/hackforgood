@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Sign in &middot; {{ site_name }}{% endblock %}
+{% block robots %}noindex,nofollow{% endblock %}
+{% block content %}
+<section class="narrow">
+  <h1>Post a job for your non-profit</h1>
+  <p>Sign in to create your organization and share openings. It's free.</p>
+  <p id="err" class="error" hidden></p>
+  <div class="stack">
+    <button class="btn" data-provider="google">Continue with Google</button>
+    <button class="btn btn-alt" data-provider="github">Continue with GitHub</button>
+  </div>
+</section>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+  const sb = supabase.createClient({{ supabase_url|tojson }}, {{ supabase_anon_key|tojson }});
+  document.querySelectorAll('[data-provider]').forEach(b => b.addEventListener('click', async () => {
+    const { error } = await sb.auth.signInWithOAuth({
+      provider: b.dataset.provider,
+      options: { redirectTo: location.origin + '/auth/callback' },
+    });
+    if (error) { const e = document.getElementById('err'); e.textContent = error.message; e.hidden = false; }
+  }));
+</script>
+{% endblock %}

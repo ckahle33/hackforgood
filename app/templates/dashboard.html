@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ org.name }} &middot; {{ site_name }}{% endblock %}
+{% block robots %}noindex,nofollow{% endblock %}
+{% block content %}
+<div class="row"><h1>{{ org.name }}</h1><a class="btn" href="/dashboard/jobs/new">Post a job</a></div>
+<p class="muted">New listings are reviewed before they go live, usually within a day.</p>
+{% if jobs %}
+<table class="table">
+  <tr><th>Title</th><th>Status</th><th>Applicants</th><th></th></tr>
+  {% for j in jobs %}
+  <tr>
+    <td><a href="/jobs/{{ j.id }}">{{ j.title }}</a></td>
+    <td><span class="status {{ j.status }}">{{ j.status }}</span></td>
+    <td>{% if j.accept_applications %}<a href="/dashboard/jobs/{{ j.id }}/applicants">{{ j.applications|length }}</a>{% else %}<span class="muted">external</span>{% endif %}</td>
+    <td>{% if j.status in ('approved', 'pending') %}
+      <form method="post" action="/dashboard/jobs/{{ j.id }}/close" class="inline"><button class="link">Close</button></form>{% endif %}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% else %}<div class="empty">You haven't posted anything yet.</div>{% endif %}
+{% endblock %}

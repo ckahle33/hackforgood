@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ job.title }} at {{ job.org.name }} &middot; {{ site_name }}{% endblock %}
+{% block desc %}{{ job.title }} at {{ job.org.name }} ({{ job.cause }}, {{ job.job_type }}). {{ job.description[:140] }}{% endblock %}
+{% block og_type %}article{% endblock %}
+{% block robots %}{{ 'index,follow' if job.status == 'approved' else 'noindex,nofollow' }}{% endblock %}
+{% block jsonld %}{% if jsonld %}<script type="application/ld+json">{{ jsonld|tojson }}</script>{% endif %}{% endblock %}
+{% block content %}
+<article class="detail">
+  <a href="/jobs">&larr; All jobs</a>
+  {% if job.status != 'approved' %}<div class="notice">Status: {{ job.status }} &mdash; not publicly visible.</div>{% endif %}
+  <div class="job-org">{{ job.org.name }}</div>
+  <h1>{{ job.title }}</h1>
+  <div class="tags">
+    <span class="tag cause">{{ job.cause }}</span><span class="tag">{{ job.job_type }}</span>
+    <span class="tag">{% if job.remote %}Remote{% endif %}{% if job.remote and job.location %} / {% endif %}{{ job.location }}</span>
+  </div>
+  {% if job.accept_applications %}
+    <a class="btn" href="/jobs/{{ job.id }}/apply">Apply</a>
+  {% else %}
+    <a class="btn" href="{{ job.apply_url }}" rel="noopener nofollow" target="_blank">Apply</a>
+  {% endif %}
+  <h2>About the role</h2>
+  <div class="prose">{{ job.description }}</div>
+  <h2>About {{ job.org.name }}</h2>
+  <div class="prose">{{ job.org.mission }}</div>
+  {% if job.org.website %}<p><a href="{{ job.org.website }}" rel="noopener nofollow" target="_blank">{{ job.org.website }}</a></p>{% endif %}
+</article>
+{% endblock %}

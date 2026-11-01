@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Post a job &middot; {{ site_name }}{% endblock %}
+{% block robots %}noindex,nofollow{% endblock %}
+{% block content %}
+<section class="narrow">
+  <h1>Post a job</h1>
+  {% for e in errors %}<p class="error">{{ e }}</p>{% endfor %}
+  <form method="post" class="form">
+    <label>Job title <input name="title" required maxlength="150" value="{{ v.title }}"></label>
+    <label>Description <textarea name="description" rows="9" required>{{ v.description }}</textarea></label>
+    <label>Cause
+      <select name="cause">{% for c in causes %}<option {{ 'selected' if v.cause == c }}>{{ c }}</option>{% endfor %}</select></label>
+    <label>Type
+      <select name="job_type">{% for t in job_types %}<option {{ 'selected' if v.job_type == t }}>{{ t }}</option>{% endfor %}</select></label>
+    <label>Location <input name="location" value="{{ v.location }}"></label>
+    <label class="check"><input type="checkbox" name="remote" value="1" {{ 'checked' if v.remote }}> This role can be done remotely</label>
+    <fieldset class="choice" x-data="{ m: '{{ 'external' if v.get('accept_applications') == False else 'site' }}' }">
+      <legend>How should people apply?</legend>
+      <label class="check"><input type="radio" name="apply_method" value="site" x-model="m"> On this site (you'll see applicants in your dashboard)</label>
+      <label class="check"><input type="radio" name="apply_method" value="external" x-model="m"> On my own site or by email</label>
+      <label x-show="m === 'external'" x-cloak>Apply link (https:// or mailto:)
+        <input name="apply_url" placeholder="https://..." value="{{ v.apply_url }}"></label>
+    </fieldset>
+    <button class="btn">Submit for review</button>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Signing in &middot; {{ site_name }}{% endblock %}
+{% block robots %}noindex,nofollow{% endblock %}
+{% block content %}
+<section class="narrow"><p id="msg">Signing you in&hellip;</p></section>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+  const sb = supabase.createClient({{ supabase_url|tojson }}, {{ supabase_anon_key|tojson }});
+  (async () => {
+    const { data } = await sb.auth.getSession();
+    const token = data.session && data.session.access_token;
+    if (!token) { document.getElementById('msg').textContent = 'Sign-in failed. Please try again.'; return; }
+    const r = await fetch('/auth/session', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ access_token: token }) });
+    await sb.auth.signOut({ scope: 'local' });
+    if (r.ok) location.replace('/dashboard');
+    else document.getElementById('msg').textContent = 'Sign-in failed. Please try again.';
+  })();
+</script>
+{% endblock %}

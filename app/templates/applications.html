@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}My applications &middot; {{ site_name }}{% endblock %}
+{% block robots %}noindex,nofollow{% endblock %}
+{% block content %}
+<h1>My applications</h1>
+{% for a in apps %}
+<div class="card">
+  <div class="job-org">{{ a.job.org.name }}</div>
+  <h3><a href="/jobs/{{ a.job.id }}">{{ a.job.title }}</a></h3>
+  <p class="muted">Sent {{ a.created_at.strftime('%b %d, %Y') }} &middot; <span class="status">{{ a.status }}</span></p>
+  <form method="post" action="/applications/{{ a.id }}/withdraw" class="inline"><button class="link">Withdraw and delete</button></form>
+</div>
+{% else %}<div class="empty">You haven't applied to anything yet. <a href="/jobs">Browse jobs</a>.</div>{% endfor %}
+{% endblock %}

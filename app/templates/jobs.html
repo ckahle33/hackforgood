@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Browse jobs &middot; {{ site_name }}{% endblock %}
+{% block desc %}Browse jobs, internships and volunteer roles at non-profits. Filter by cause, job type and remote work.{% endblock %}
+{% block content %}
+<h1>Browse jobs</h1>
+<form class="filters" method="get" action="/jobs">
+  <input name="q" value="{{ f.q }}" placeholder="Search" aria-label="Search">
+  <select name="cause" aria-label="Cause">
+    <option value="">All causes</option>
+    {% for c in causes %}<option {{ 'selected' if f.cause == c }}>{{ c }}</option>{% endfor %}
+  </select>
+  <select name="job_type" aria-label="Job type">
+    <option value="">Any type</option>
+    {% for t in job_types %}<option {{ 'selected' if f.job_type == t }}>{{ t }}</option>{% endfor %}
+  </select>
+  <label class="check"><input type="checkbox" name="remote" value="1" {{ 'checked' if f.remote == '1' }}> Remote</label>
+  <button class="btn btn-sm">Filter</button>
+</form>
+{% if jobs %}
+  <div class="grid">{% for job in jobs %}{% include "_job_card.html" %}{% endfor %}</div>
+{% else %}
+  <div class="empty">No jobs match. Try clearing a filter.</div>
+{% endif %}
+{% endblock %}

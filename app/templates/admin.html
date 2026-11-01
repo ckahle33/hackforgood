@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Review &middot; {{ site_name }}{% endblock %}
+{% block robots %}noindex,nofollow{% endblock %}
+{% block content %}
+<h1>Pending listings</h1>
+{% for job in jobs %}
+<div class="card">
+  <div class="job-org">{{ job.org.name }}</div>
+  <h3><a href="/jobs/{{ job.id }}">{{ job.title }}</a></h3>
+  <p class="muted">{{ job.description[:300] }}</p>
+  <form method="post" action="/admin/jobs/{{ job.id }}/approve" class="inline"><button class="btn btn-sm">Approve</button></form>
+  <form method="post" action="/admin/jobs/{{ job.id }}/reject" class="inline"><button class="btn btn-sm btn-alt">Reject</button></form>
+</div>
+{% else %}<div class="empty">Nothing waiting for review.</div>{% endfor %}
+{% endblock %}

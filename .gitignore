@@ -1,8 +1,8 @@
+.venv/
 venv/
-node_modules/
 __pycache__/
 .env
-app.yaml
-.idea
+.env.*
+!.env.example
 .DS_Store
-cloud_sql_proxy
+*.db
