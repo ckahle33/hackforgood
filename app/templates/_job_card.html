@@ -5,5 +5,6 @@
     <span class="tag cause">{{ job.cause }}</span>
     <span class="tag">{{ job.job_type }}</span>
     <span class="tag">{% if job.remote %}Remote{% endif %}{% if job.remote and job.location %} / {% endif %}{{ job.location }}</span>
+    {% if job.salary_display %}<span class="tag">{{ job.salary_display }}</span>{% endif %}
   </div>
 </a>

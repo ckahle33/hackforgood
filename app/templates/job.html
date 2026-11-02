@@ -2,22 +2,28 @@
 {% block title %}{{ job.title }} at {{ job.org.name }} &middot; {{ site_name }}{% endblock %}
 {% block desc %}{{ job.title }} at {{ job.org.name }} ({{ job.cause }}, {{ job.job_type }}). {{ job.description[:140] }}{% endblock %}
 {% block og_type %}article{% endblock %}
-{% block robots %}{{ 'index,follow' if job.status == 'approved' else 'noindex,nofollow' }}{% endblock %}
+{% block robots %}{{ 'index,follow' if live else 'noindex,nofollow' }}{% endblock %}
 {% block jsonld %}{% if jsonld %}<script type="application/ld+json">{{ jsonld|tojson }}</script>{% endif %}{% endblock %}
 {% block content %}
 <article class="detail">
   <a href="/jobs">&larr; All jobs</a>
-  {% if job.status != 'approved' %}<div class="notice">Status: {{ job.status }} &mdash; not publicly visible.</div>{% endif %}
+  {% if job.status != 'approved' or job.expired %}<div class="notice">Status: {{ 'expired' if job.expired else job.status }} &mdash; not publicly visible.</div>{% endif %}
   <div class="job-org">{{ job.org.name }}</div>
   <h1>{{ job.title }}</h1>
   <div class="tags">
     <span class="tag cause">{{ job.cause }}</span><span class="tag">{{ job.job_type }}</span>
     <span class="tag">{% if job.remote %}Remote{% endif %}{% if job.remote and job.location %} / {% endif %}{{ job.location }}</span>
+    {% if job.salary_display %}<span class="tag cause">{{ job.salary_display }}</span>{% endif %}
   </div>
-  {% if job.accept_applications %}
-    <a class="btn" href="/jobs/{{ job.id }}/apply">Apply</a>
-  {% else %}
-    <a class="btn" href="{{ job.apply_url }}" rel="noopener nofollow" target="_blank">Apply</a>
+  {% if job.expires_at %}<p class="muted small">{% if job.expired %}Closed{% else %}Apply by{% endif %} {{ job.expires_at.strftime('%b %d, %Y') }}</p>{% endif %}
+  {% if not job.expired %}
+  <div class="actions">
+    {% if job.accept_applications %}<a class="btn" href="/jobs/{{ job.id }}/apply">Apply now</a>{% endif %}
+    {% if job.apply_url %}
+      <a class="btn {{ 'btn-alt' if job.accept_applications }}" href="{{ job.apply_url }}" rel="noopener nofollow" target="_blank">
+        {{ 'Email us' if job.apply_url.startswith('mailto:') else 'Visit site' }} <span aria-hidden="true">&nearr;</span></a>
+    {% endif %}
+  </div>
   {% endif %}
   <h2>About the role</h2>
   <div class="prose">{{ job.description }}</div>

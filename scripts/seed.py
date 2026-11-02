@@ -29,6 +29,7 @@ with SessionLocal() as db:
         db.flush()
         for title, desc, jtype, loc, remote in jobs:
             db.add(Job(org_id=org.id, title=title, description=desc, cause=cause, job_type=jtype,
-                       location=loc, remote=remote, apply_url="https://example.org/apply", status="approved"))
+                       city=loc.split(", ")[0] if loc else "", region=loc.split(", ")[1] if loc else "", country="US", location=loc,
+                       remote=remote, accept_applications=True, apply_url="https://example.org/apply", status="approved"))
     db.commit()
 print("seeded")

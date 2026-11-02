@@ -69,3 +69,5 @@ fieldset.choice{border:1px solid var(--line);border-radius:8px;padding:12px 16px
 fieldset.choice legend{font-weight:600;padding:0 6px}
 .inline-form{display:flex;gap:10px;max-width:280px}
 .nav nav a.admin-link{font-weight:700;color:var(--green)}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.actions{display:flex;flex-wrap:wrap;gap:12px;margin:8px 0 4px}

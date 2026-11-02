@@ -1,7 +1,7 @@
 from tests.conftest import login
 
-JOB = dict(title="Case Manager", description="Help families.", cause="Hunger & Housing",
-           job_type="Full-time", location="Austin, TX", apply_url="https://example.org/apply")
+JOB = dict(accept_applications="1", title="Case Manager", description="Help families.", cause="Hunger & Housing",
+           job_type="Full-time", city="Austin", region="TX", country="US", apply_url="https://example.org/apply")
 
 
 def make_org(c):
@@ -54,7 +54,7 @@ def test_job_lifecycle_and_moderation(client):
 def test_rejects_dangerous_apply_url(client):
     login(client, "tok-org")
     make_org(client)
-    r = client.post("/dashboard/jobs/new", data={**JOB, "apply_method": "external", "apply_url": "javascript:alert(1)"})
+    r = client.post("/dashboard/jobs/new", data={**JOB, "apply_url": "javascript:alert(1)"})
     assert r.status_code == 422
 
 
@@ -77,7 +77,7 @@ def test_cannot_close_other_orgs_job(client):
 def approved_job(client, **over):
     login(client, "tok-org")
     make_org(client)
-    client.post("/dashboard/jobs/new", data={**JOB, **over})
+    client.post("/dashboard/jobs/new", data={**JOB, "accept_applications": "1", **over})
     admin = client.__class__(client.app, follow_redirects=False)
     login(admin, "tok-admin")
     admin.post("/admin/jobs/1/approve")
@@ -123,7 +123,7 @@ def test_apply_validation_and_guards(client):
 
 
 def test_external_jobs_have_no_apply_form(client):
-    approved_job(client, apply_method="external")
+    approved_job(client, accept_applications="")
     seeker = client.__class__(client.app, follow_redirects=False)
     login(seeker, "tok-admin")
     assert seeker.get("/jobs/1/apply").status_code == 404
@@ -148,3 +148,98 @@ def test_job_structured_data_and_sitemap(client):
     page = client.get("/jobs/2").text
     assert "noindex" in page and "ld+json" not in page
     assert "/jobs/2</loc>" not in client.get("/sitemap.xml").text
+
+
+def test_google_jobs_fields(client):
+    import json, re
+    approved_job(client, salary_min="45,000", salary_max="60000", salary_period="YEAR", duration_days="30")
+    page = client.get("/jobs/1").text
+    ld = json.loads(re.search(r'application/ld\+json">(.*?)</script>', page, re.S).group(1))
+    assert ld["jobLocation"]["address"] == {"@type": "PostalAddress", "addressLocality": "Austin",
+                                            "addressRegion": "TX", "addressCountry": "US"}
+    assert ld["baseSalary"]["value"] == {"@type": "QuantitativeValue", "unitText": "YEAR",
+                                         "minValue": 45000, "maxValue": 60000}
+    assert ld["validThrough"].endswith("Z") and ld["directApply"] is True
+    assert ld["description"].startswith("<p>") and ld["identifier"]["value"] == "1"
+    assert "$45,000-$60,000 per year" in page
+
+
+def test_remote_job_ld(client):
+    approved_job(client, remote="1", city="", region="", country="CA")
+    import json, re
+    ld = json.loads(re.search(r'application/ld\+json">(.*?)</script>', client.get("/jobs/1").text, re.S).group(1))
+    assert ld["jobLocationType"] == "TELECOMMUTE"
+    assert ld["applicantLocationRequirements"] == {"@type": "Country", "name": "CA"}
+    assert "jobLocation" not in ld
+
+
+def test_location_and_salary_validation(client):
+    login(client, "tok-org")
+    make_org(client)
+    bad = lambda **o: client.post("/dashboard/jobs/new", data={**JOB, **o}).status_code
+    assert bad(city="", region="") == 422                       # on-site needs a city and state
+    assert bad(country="USA") == 422
+    assert bad(salary_min="50000") == 422                       # pay needs a period
+    assert bad(salary_min="70000", salary_max="50000", salary_period="YEAR") == 422
+    assert bad(salary_min="abc", salary_period="YEAR") == 422
+    assert bad(duration_days="45") == 422
+    assert bad(remote="1", city="", region="") == 303           # remote needs only a country
+
+
+def test_expired_job_is_hidden_and_gone(client):
+    import datetime as dt
+    approved_job(client)
+    from app.db import SessionLocal
+    from app.models import Job
+    with SessionLocal() as db:
+        j = db.get(Job, 1)
+        j.expires_at = dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=1)
+        db.commit()
+    anon = client.__class__(client.app, follow_redirects=False)
+    assert anon.get("/jobs/1").status_code == 410
+    assert "Case Manager" not in anon.get("/jobs").text
+    assert "/jobs/1</loc>" not in anon.get("/sitemap.xml").text
+    assert client.get("/jobs/1").status_code == 200  # owner can still see it
+
+
+def test_renew_and_reopen(client):
+    import datetime as dt
+    approved_job(client)
+    from app.db import SessionLocal
+    from app.models import Job
+    with SessionLocal() as db:
+        db.get(Job, 1).expires_at = dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=1)
+        db.commit()
+    anon = client.__class__(client.app, follow_redirects=False)
+    assert anon.get("/jobs/1").status_code == 410
+    assert "Renew" in client.get("/dashboard").text
+    assert client.post("/dashboard/jobs/1/renew", data={"duration_days": "30"}).status_code == 303
+    assert anon.get("/jobs/1").status_code == 200          # live again, no re-review needed
+    assert client.post("/dashboard/jobs/1/renew", data={"duration_days": "45"}).status_code == 404
+    # closed listings reopen into the review queue
+    client.post("/dashboard/jobs/1/close")
+    assert client.post("/dashboard/jobs/1/renew", data={"duration_days": "60"}).status_code == 303
+    assert anon.get("/jobs/1").status_code == 404
+    with SessionLocal() as db:
+        assert db.get(Job, 1).status == "pending"
+
+
+def test_only_owner_can_renew(client):
+    approved_job(client)
+    other = client.__class__(client.app, follow_redirects=False)
+    login(other, "tok-admin")
+    assert other.post("/dashboard/jobs/1/renew", data={"duration_days": "30"}).status_code == 404
+
+
+def test_both_buttons_and_requirement(client):
+    approved_job(client)  # on-site form + external link
+    page = client.get("/jobs/1").text
+    assert "/jobs/1/apply" in page and "Apply now" in page
+    assert "Visit site" in page and 'href="https://example.org/apply"' in page
+    # on-site only: no visit button; neither option: rejected
+    other = client.__class__(client.app, follow_redirects=False)
+    login(other, "tok-admin")
+    make_org_data = {"name": "Other Org", "mission": "x"}
+    other.post("/organization/new", data=make_org_data)
+    assert other.post("/dashboard/jobs/new", data={**JOB, "apply_url": ""}).status_code == 303
+    assert other.post("/dashboard/jobs/new", data={**JOB, "apply_url": "", "accept_applications": ""}).status_code == 422

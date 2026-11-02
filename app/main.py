@@ -1,3 +1,4 @@
+import html
 from pathlib import Path
 
 from fastapi import Depends, FastAPI, Form, HTTPException, Request
@@ -13,7 +14,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from app import auth
 from app.config import get_settings
 from app.db import get_db
-from app.models import APPLICATION_STATUSES, CAUSES, JOB_TYPES, Application, Job, Organization, User
+from app.models import APPLICATION_STATUSES, CAUSES, JOB_TYPES, SALARY_PERIODS, Application, Job, Organization, User
 
 BASE = Path(__file__).parent
 settings = get_settings()
@@ -30,7 +31,7 @@ app.mount("/static", StaticFiles(directory=BASE / "static"), name="static")
 
 templates = Jinja2Templates(directory=BASE / "templates")
 templates.env.globals.update(
-    site_name=settings.site_name, causes=CAUSES, job_types=JOB_TYPES, is_admin=auth.is_admin,
+    site_name=settings.site_name, causes=CAUSES, job_types=JOB_TYPES, is_admin=auth.is_admin, salary_periods=SALARY_PERIODS,
     supabase_url=settings.supabase_url, supabase_anon_key=settings.supabase_anon_key,
 )
 
@@ -44,17 +45,33 @@ EMPLOYMENT_TYPES = {"Full-time": "FULL_TIME", "Part-time": "PART_TIME", "Contrac
 
 
 def job_posting_ld(job: Job, url: str) -> dict:
+    paragraphs = [p.strip() for p in job.description.replace("\r", "").split("\n\n") if p.strip()]
     ld = {
         "@context": "https://schema.org", "@type": "JobPosting", "title": job.title,
-        "description": job.description, "datePosted": job.created_at.date().isoformat(),
+        "description": "".join(f"<p>{html.escape(p).replace(chr(10), '<br>')}</p>" for p in paragraphs),
+        "datePosted": job.created_at.date().isoformat(),
         "employmentType": EMPLOYMENT_TYPES.get(job.job_type, "OTHER"), "url": url,
+        "identifier": {"@type": "PropertyValue", "name": settings.site_name, "value": str(job.id)},
+        "directApply": bool(job.accept_applications),
         "hiringOrganization": {"@type": "Organization", "name": job.org.name,
                                **({"sameAs": job.org.website} if job.org.website else {})},
     }
+    if job.expires_at:
+        ld["validThrough"] = job.expires_at.astimezone(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     if job.remote:
         ld["jobLocationType"] = "TELECOMMUTE"
-    if job.location:
-        ld["jobLocation"] = {"@type": "Place", "address": {"@type": "PostalAddress", "addressLocality": job.location}}
+        ld["applicantLocationRequirements"] = {"@type": "Country", "name": job.country}
+    if job.city or not job.remote:
+        ld["jobLocation"] = {"@type": "Place", "address": {
+            "@type": "PostalAddress", "addressLocality": job.city, "addressRegion": job.region,
+            "addressCountry": job.country}}
+    if job.salary_min or job.salary_max:
+        value = {"@type": "QuantitativeValue", "unitText": job.salary_period}
+        if job.salary_min:
+            value["minValue"] = job.salary_min
+        if job.salary_max:
+            value["maxValue"] = job.salary_max
+        ld["baseSalary"] = {"@type": "MonetaryAmount", "currency": "USD", "value": value}
     return ld
 
 
@@ -76,7 +93,8 @@ def safe_path(p) -> bool:
 
 
 def visible_jobs():
-    return select(Job).options(joinedload(Job.org)).where(Job.status == "approved")
+    return (select(Job).options(joinedload(Job.org))
+            .where(Job.status == "approved", or_(Job.expires_at.is_(None), Job.expires_at > dt.datetime.now(dt.timezone.utc))))
 
 
 @app.get("/robots.txt", response_class=PlainTextResponse)
@@ -141,8 +159,11 @@ def job_detail(job_id: int, request: Request, db: Session = Depends(get_db), use
     )
     if not can_see:
         raise HTTPException(404)
+    live = job.status == "approved" and not job.expired
+    if job.status == "approved" and job.expired and not (user and (user.id == job.org.owner_id or auth.is_admin(user))):
+        raise HTTPException(410)  # tells search engines the listing is permanently gone
     url = f"{base_url(request)}/jobs/{job.id}"
-    return render(request, "job.html", user, job=job, jsonld=job_posting_ld(job, url) if job.status == "approved" else None)
+    return render(request, "job.html", user, job=job, jsonld=job_posting_ld(job, url) if live else None, live=live)
 
 
 # ---- auth -------------------------------------------------------------
@@ -229,20 +250,37 @@ def job_form(request: Request, db: Session = Depends(get_db), user=Depends(auth.
     return render(request, "job_form.html", user, errors=[], v={})
 
 
+def parse_money(value: str, errors: list, label: str) -> int | None:
+    value = value.strip().replace(",", "").replace("$", "")
+    if not value:
+        return None
+    if not value.isdigit() or not 0 < int(value) <= 10_000_000:
+        errors.append(f"{label} must be a whole number of dollars.")
+        return None
+    return int(value)
+
+
 @app.post("/dashboard/jobs/new")
 def job_create(
     request: Request, title: str = Form(...), description: str = Form(...), cause: str = Form(...),
-    job_type: str = Form(...), location: str = Form(""), remote: str = Form(""),
-    apply_method: str = Form("site"), apply_url: str = Form(""),
+    job_type: str = Form(...), city: str = Form(""), region: str = Form(""), country: str = Form("US"),
+    remote: str = Form(""), salary_min: str = Form(""), salary_max: str = Form(""), salary_period: str = Form(""),
+    duration_days: int = Form(60), accept_applications: str = Form(""), apply_url: str = Form(""),
     db: Session = Depends(get_db), user=Depends(auth.require_user),
 ):
     org = get_org(db, user)
     if org is None:
         return RedirectResponse("/organization/new", 303)
+    errors: list[str] = []
     v = {"title": title.strip(), "description": description.strip(), "cause": cause, "job_type": job_type,
-         "location": location.strip(), "remote": remote == "1", "apply_url": apply_url.strip(),
-         "accept_applications": apply_method != "external"}
-    errors = []
+         "city": city.strip(), "region": region.strip(), "country": country.strip().upper() or "US",
+         "remote": remote == "1", "apply_url": apply_url.strip(),
+         "accept_applications": accept_applications == "1"}
+    v["salary_min"] = parse_money(salary_min, errors, "Minimum pay")
+    v["salary_max"] = parse_money(salary_max, errors, "Maximum pay")
+    v["salary_period"] = salary_period if salary_period in SALARY_PERIODS else None
+    form_echo = {**v, "salary_min": salary_min, "salary_max": salary_max, "salary_period": salary_period,
+                 "duration_days": duration_days}
     if not v["title"] or len(v["title"]) > 150:
         errors.append("Title is required (150 characters max).")
     if not v["description"]:
@@ -251,15 +289,41 @@ def job_create(
         errors.append("Pick a cause.")
     if job_type not in JOB_TYPES:
         errors.append("Pick a job type.")
-    if not v["remote"] and not v["location"]:
-        errors.append("Add a location or mark the role remote.")
-    if not v["accept_applications"] and not safe_url(v["apply_url"], allow_mailto=True):
-        errors.append("Apply link must start with http://, https:// or mailto:")
-    if v["accept_applications"]:
-        v["apply_url"] = ""
+    if len(v["country"]) != 2 or not v["country"].isalpha():
+        errors.append("Country must be a 2-letter code such as US, CA or GB.")
+    if not v["remote"] and not (v["city"] and v["region"]):
+        errors.append("Add the city and state or region, or mark the role remote.")
+    if (v["salary_min"] or v["salary_max"]) and not v["salary_period"]:
+        errors.append("Choose whether the pay is per hour, month or year.")
+    if v["salary_min"] and v["salary_max"] and v["salary_min"] > v["salary_max"]:
+        errors.append("Minimum pay can't be higher than maximum pay.")
+    if duration_days not in (30, 60, 90):
+        errors.append("Choose how long the listing stays up.")
+    if v["apply_url"] and not safe_url(v["apply_url"], allow_mailto=True):
+        errors.append("The link must start with http://, https:// or mailto:")
+    if not v["accept_applications"] and not v["apply_url"]:
+        errors.append("Let people apply on this site, add a link to the full posting, or both.")
     if errors:
-        return render(request, "job_form.html", user, status_code=422, errors=errors, v=v)
+        return render(request, "job_form.html", user, status_code=422, errors=errors, v=form_echo)
+    v["location"] = ", ".join(x for x in (v["city"], v["region"]) if x)
+    v["expires_at"] = dt.datetime.now(dt.timezone.utc) + dt.timedelta(days=duration_days)
     db.add(Job(org_id=org.id, **v))
+    db.commit()
+    return RedirectResponse("/dashboard", 303)
+
+
+@app.post("/dashboard/jobs/{job_id}/renew")
+def job_renew(job_id: int, duration_days: int = Form(60), db: Session = Depends(get_db),
+              user=Depends(auth.require_user)):
+    job = db.get(Job, job_id)
+    if job is None or job.org.owner_id != user.id or job.status not in ("approved", "closed") or duration_days not in (30, 60, 90):
+        raise HTTPException(404)
+    # Extend from today, or from the current expiry if it is still in the future.
+    start = max(dt.datetime.now(dt.timezone.utc), job.expires_at.replace(tzinfo=job.expires_at.tzinfo or dt.timezone.utc)
+                if job.expires_at else dt.datetime.now(dt.timezone.utc))
+    job.expires_at = start + dt.timedelta(days=duration_days)
+    if job.status == "closed":
+        job.status = "pending"  # reopened listings go back through review
     db.commit()
     return RedirectResponse("/dashboard", 303)
 
@@ -390,6 +454,13 @@ def admin_moderate(job_id: int, action: str, db: Session = Depends(get_db), user
     job.status = "approved" if action == "approve" else "rejected"
     db.commit()
     return RedirectResponse("/admin", 303)
+
+
+@app.exception_handler(410)
+async def gone(request: Request, exc):
+    return templates.TemplateResponse(request, "error.html", {"user": None, "code": 410,
+        "message": "This listing has closed.", "canonical": base_url(request) + request.url.path,
+        "og_image": base_url(request) + "/static/og.png"}, status_code=410)
 
 
 @app.exception_handler(404)

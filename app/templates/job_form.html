@@ -12,14 +12,34 @@
       <select name="cause">{% for c in causes %}<option {{ 'selected' if v.cause == c }}>{{ c }}</option>{% endfor %}</select></label>
     <label>Type
       <select name="job_type">{% for t in job_types %}<option {{ 'selected' if v.job_type == t }}>{{ t }}</option>{% endfor %}</select></label>
-    <label>Location <input name="location" value="{{ v.location }}"></label>
-    <label class="check"><input type="checkbox" name="remote" value="1" {{ 'checked' if v.remote }}> This role can be done remotely</label>
-    <fieldset class="choice" x-data="{ m: '{{ 'external' if v.get('accept_applications') == False else 'site' }}' }">
-      <legend>How should people apply?</legend>
-      <label class="check"><input type="radio" name="apply_method" value="site" x-model="m"> On this site (you'll see applicants in your dashboard)</label>
-      <label class="check"><input type="radio" name="apply_method" value="external" x-model="m"> On my own site or by email</label>
-      <label x-show="m === 'external'" x-cloak>Apply link (https:// or mailto:)
-        <input name="apply_url" placeholder="https://..." value="{{ v.apply_url }}"></label>
+    <fieldset class="choice" x-data="{ remote: {{ 'true' if v.get('remote') else 'false' }} }">
+      <legend>Where is the job?</legend>
+      <label class="check"><input type="checkbox" name="remote" value="1" x-model="remote"> This role can be done remotely</label>
+      <div class="cols">
+        <label>City <input name="city" value="{{ v.city }}" placeholder="Austin"></label>
+        <label>State / region <input name="region" value="{{ v.region }}" placeholder="TX"></label>
+        <label><span x-text="remote ? 'Applicants must live in (country code)' : 'Country code'"></span>
+          <input name="country" maxlength="2" value="{{ v.country or 'US' }}"></label>
+      </div>
+      <p class="muted small" x-show="remote" x-cloak>For remote roles, city and state are optional. Google Jobs asks which country applicants can be in.</p>
+    </fieldset>
+    <fieldset class="choice">
+      <legend>Pay (optional, but listings with pay get more clicks)</legend>
+      <div class="cols">
+        <label>Minimum (USD) <input name="salary_min" inputmode="numeric" value="{{ v.salary_min or '' }}" placeholder="45000"></label>
+        <label>Maximum (USD) <input name="salary_max" inputmode="numeric" value="{{ v.salary_max or '' }}" placeholder="60000"></label>
+        <label>Per
+          <select name="salary_period">{% for k, label in salary_periods.items() %}<option value="{{ k }}" {{ 'selected' if (v.salary_period or 'YEAR') == k }}>{{ label|replace('per ', '') }}</option>{% endfor %}</select></label>
+      </div>
+    </fieldset>
+    <label>Keep the listing up for
+      <select name="duration_days">{% for d in (30, 60, 90) %}<option value="{{ d }}" {{ 'selected' if (v.duration_days or 60)|int == d }}>{{ d }} days</option>{% endfor %}</select></label>
+    <fieldset class="choice">
+      <legend>How can people apply?</legend>
+      <label class="check"><input type="checkbox" name="accept_applications" value="1" {{ 'checked' if v.get('accept_applications', True) }}>
+        Show an <strong>&nbsp;Apply now&nbsp;</strong> form on this site (you'll see applicants in your dashboard)</label>
+      <label>Link to the full posting or your site (optional) <input name="apply_url" placeholder="https://... or mailto:..." value="{{ v.apply_url }}"></label>
+      <p class="muted small">If you add a link, listings also show a <strong>Visit site</strong> button.</p>
     </fieldset>
     <button class="btn">Submit for review</button>
   </form>

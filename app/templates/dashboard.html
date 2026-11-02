@@ -10,10 +10,18 @@
   {% for j in jobs %}
   <tr>
     <td><a href="/jobs/{{ j.id }}">{{ j.title }}</a></td>
-    <td><span class="status {{ j.status }}">{{ j.status }}</span></td>
+    <td><span class="status {{ j.status }}">{{ 'expired' if j.expired and j.status == 'approved' else j.status }}</span></td>
     <td>{% if j.accept_applications %}<a href="/dashboard/jobs/{{ j.id }}/applicants">{{ j.applications|length }}</a>{% else %}<span class="muted">external</span>{% endif %}</td>
-    <td>{% if j.status in ('approved', 'pending') %}
-      <form method="post" action="/dashboard/jobs/{{ j.id }}/close" class="inline"><button class="link">Close</button></form>{% endif %}</td>
+    <td>
+      {% if j.expires_at %}<div class="muted small">{{ 'Expired' if j.expired else 'Expires' }} {{ j.expires_at.strftime('%b %d, %Y') }}</div>{% endif %}
+      {% if j.status in ('approved', 'closed') %}
+      <form method="post" action="/dashboard/jobs/{{ j.id }}/renew" class="inline-form">
+        <select name="duration_days" aria-label="Extend by">{% for d in (30, 60, 90) %}<option value="{{ d }}" {{ 'selected' if d == 60 }}>+{{ d }} days</option>{% endfor %}</select>
+        <button class="btn btn-sm btn-alt">{{ 'Reopen' if j.status == 'closed' else 'Renew' }}</button>
+      </form>{% endif %}
+      {% if j.status in ('approved', 'pending') %}
+      <form method="post" action="/dashboard/jobs/{{ j.id }}/close" class="inline"><button class="link">Close</button></form>{% endif %}
+    </td>
   </tr>
   {% endfor %}
 </table>
