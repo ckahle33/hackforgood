@@ -2,7 +2,7 @@
 {% block title %}Review &middot; {{ site_name }}{% endblock %}
 {% block robots %}noindex,nofollow{% endblock %}
 {% block content %}
-<h1>Pending listings</h1>
+<div class="row"><h1>Pending listings</h1><a class="btn btn-sm btn-alt" href="/admin/broadcast">Send an update</a></div>
 {% for job in jobs %}
 <div class="card">
   <div class="job-org">{{ job.org.name }}</div>

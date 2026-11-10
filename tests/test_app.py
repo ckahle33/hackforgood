@@ -243,3 +243,124 @@ def test_both_buttons_and_requirement(client):
     other.post("/organization/new", data=make_org_data)
     assert other.post("/dashboard/jobs/new", data={**JOB, "apply_url": ""}).status_code == 303
     assert other.post("/dashboard/jobs/new", data={**JOB, "apply_url": "", "accept_applications": ""}).status_code == 422
+
+
+# ---- newsletter -------------------------------------------------------
+
+import pytest
+
+
+@pytest.fixture()
+def outbox(monkeypatch):
+    from app import mail
+    sent = []
+    monkeypatch.setattr(mail, "send_batch", lambda msgs: sent.extend(msgs) or True)
+    monkeypatch.setattr(mail, "configured", lambda: True)
+    from app.config import get_settings
+    s = get_settings()
+    monkeypatch.setattr(s, "mail_address", "1 Main St, Austin, TX 78701")
+    monkeypatch.setattr(s, "cron_secret", "s3cret")
+    monkeypatch.setattr(s, "resend_api_key", "test-key")
+    return sent
+
+
+def subscribe_and_confirm(client, outbox, email="fan@example.com", **form):
+    client.post("/subscribe", data={"email": email, **form})
+    from app.db import SessionLocal
+    from app.models import Subscriber
+    with SessionLocal() as db:
+        tok = db.query(Subscriber).filter_by(email=email).one().token
+    assert client.post(f"/subscribe/confirm/{tok}").status_code == 200
+    return tok
+
+
+def test_double_opt_in_and_unsubscribe(client, outbox):
+    r = client.post("/subscribe", data={"email": "Fan@Example.com"})
+    assert r.status_code == 200 and len(outbox) == 1
+    assert "/subscribe/confirm/" in outbox[0]["html"] and outbox[0]["to"] == ["fan@example.com"]
+    from app.db import SessionLocal
+    from app.models import Subscriber
+    with SessionLocal() as db:
+        sub = db.query(Subscriber).one()
+        assert not sub.active                      # not subscribed until they confirm
+        tok = sub.token
+    assert client.get(f"/subscribe/confirm/{tok}").status_code == 200   # GET alone must not confirm
+    with SessionLocal() as db:
+        assert not db.query(Subscriber).one().active
+    client.post(f"/subscribe/confirm/{tok}")
+    with SessionLocal() as db:
+        assert db.query(Subscriber).one().active
+    assert client.post(f"/unsubscribe/{tok}").status_code == 200       # one-click POST
+    with SessionLocal() as db:
+        assert not db.query(Subscriber).one().active
+    assert client.get("/unsubscribe/bogus").status_code == 404
+
+
+def test_subscribe_is_quiet_about_existing_and_rate_limited(client, outbox):
+    client.post("/subscribe", data={"email": "a@example.com"})
+    client.post("/subscribe", data={"email": "a@example.com"})   # within the hour: no second email
+    assert len(outbox) == 1
+    assert client.post("/subscribe", data={"email": "nope"}).status_code == 422
+    client.post("/subscribe", data={"email": "bot@example.com", "website": "x"})
+    assert len(outbox) == 1
+
+
+def test_digest_sends_new_jobs_once_and_respects_causes(client, outbox):
+    approved_job(client)                                   # Hunger & Housing job
+    subscribe_and_confirm(client, outbox, "all@example.com")
+    subscribe_and_confirm(client, outbox, "animals@example.com", causes="Animals")
+    outbox.clear()
+    assert client.post("/cron/digest").status_code == 403
+    r = client.post("/cron/digest", headers={"x-cron-secret": "s3cret"})
+    assert r.json()["sent"] == 1 and r.json()["skipped_no_new_jobs"] == 1
+    assert [m["to"] for m in outbox] == [["all@example.com"]]
+    msg = outbox[0]
+    assert "Case Manager" in msg["html"] and "Unsubscribe" in msg["html"] and "Main St" in msg["html"]
+    assert msg["headers"]["List-Unsubscribe-Post"] == "List-Unsubscribe=One-Click"
+    # a second run the same day sends nothing: each subscriber gets one per 7 days
+    outbox.clear()
+    assert client.post("/cron/digest", headers={"x-cron-secret": "s3cret"}).json()["sent"] == 0 and not outbox
+
+
+def test_digest_stays_within_daily_limit(client, outbox, monkeypatch):
+    from app.config import get_settings
+    monkeypatch.setattr(get_settings(), "mail_daily_limit", 13)   # 10 reserved for confirmations
+    approved_job(client)
+    for i in range(5):
+        subscribe_and_confirm(client, outbox, f"u{i}@example.com")
+    # 5 confirmation emails were logged by the fixture's mail.log_sent calls
+    from app import mail
+    from app.db import SessionLocal
+    with SessionLocal() as db:
+        left = mail.remaining_today(db, reserve=mail.RESERVED_FOR_CONFIRMATIONS)
+    assert left <= 0
+    outbox.clear()
+    assert client.post("/cron/digest", headers={"x-cron-secret": "s3cret"}).json()["sent"] == 0
+
+
+def test_digest_refuses_without_mail_config(client, monkeypatch):
+    from app.config import get_settings
+    monkeypatch.setattr(get_settings(), "cron_secret", "s3cret")
+    monkeypatch.setattr(get_settings(), "mail_address", "")
+    assert client.post("/cron/digest", headers={"x-cron-secret": "s3cret"}).status_code == 503
+
+
+def test_admin_broadcast(client, outbox):
+    subscribe_and_confirm(client, outbox, "x@example.com")
+    outbox.clear()
+    plain = client.__class__(client.app, follow_redirects=False)
+    login(plain, "tok-org")
+    assert plain.get("/admin/broadcast").status_code == 403
+    admin = client.__class__(client.app, follow_redirects=False)
+    login(admin, "tok-admin")
+    assert admin.post("/admin/broadcast", data={"subject": "News", "body": "Hello\n\nThere"}).status_code == 200
+    assert len(outbox) == 1 and outbox[0]["subject"] == "News" and "<p" in outbox[0]["html"]
+
+
+def test_signup_hidden_until_mail_is_configured(client):
+    assert "Get new roles" not in client.get("/").text
+    assert client.post("/subscribe", data={"email": "a@example.com"}).status_code == 404
+
+
+def test_signup_shown_when_configured(client, outbox):
+    assert "Get new roles" in client.get("/").text and "Get new roles" in client.get("/jobs").text

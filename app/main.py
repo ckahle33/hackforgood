@@ -4,7 +4,6 @@ from pathlib import Path
 from fastapi import Depends, FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 import datetime as dt
 
 from sqlalchemy import func, or_, select
@@ -14,6 +13,8 @@ from starlette.middleware.sessions import SessionMiddleware
 from app import auth
 from app.config import get_settings
 from app.db import get_db
+from app.web import base_url, render, templates
+from app.newsletter import router as newsletter_router
 from app.models import APPLICATION_STATUSES, CAUSES, JOB_TYPES, SALARY_PERIODS, Application, Job, Organization, User
 
 BASE = Path(__file__).parent
@@ -27,18 +28,8 @@ app.add_middleware(
     https_only=settings.https_only,
     max_age=60 * 60 * 24 * 14,
 )
+app.include_router(newsletter_router)
 app.mount("/static", StaticFiles(directory=BASE / "static"), name="static")
-
-templates = Jinja2Templates(directory=BASE / "templates")
-templates.env.globals.update(
-    site_name=settings.site_name, causes=CAUSES, job_types=JOB_TYPES, is_admin=auth.is_admin, salary_periods=SALARY_PERIODS,
-    supabase_url=settings.supabase_url, supabase_anon_key=settings.supabase_anon_key,
-)
-
-
-def base_url(request: Request) -> str:
-    return (settings.site_url or str(request.base_url)).rstrip("/")
-
 
 EMPLOYMENT_TYPES = {"Full-time": "FULL_TIME", "Part-time": "PART_TIME", "Contract": "CONTRACTOR",
                     "Volunteer": "VOLUNTEER", "Internship": "INTERN"}
@@ -75,13 +66,6 @@ def job_posting_ld(job: Job, url: str) -> dict:
     return ld
 
 
-def render(request: Request, name: str, user: User | None, status_code: int = 200, **ctx):
-    base = base_url(request)
-    ctx.setdefault("canonical", base + request.url.path)
-    ctx.setdefault("og_image", base + "/static/og.png")
-    return templates.TemplateResponse(request, name, {"user": user, **ctx}, status_code=status_code)
-
-
 def safe_url(value: str, allow_mailto: bool = False) -> str | None:
     value = value.strip()
     prefixes = ("http://", "https://") + (("mailto:",) if allow_mailto else ())
@@ -102,7 +86,7 @@ def robots(request: Request):
     return (
         "User-agent: *\nAllow: /\n"
         "Disallow: /dashboard\nDisallow: /admin\nDisallow: /auth/\nDisallow: /login\n"
-        "Disallow: /applications\nDisallow: /organization/\n"
+        "Disallow: /applications\nDisallow: /organization/\nDisallow: /unsubscribe\nDisallow: /subscribe/\nDisallow: /cron\n"
         f"Sitemap: {base_url(request)}/sitemap.xml\n"
     )
 
@@ -452,6 +436,8 @@ def admin_moderate(job_id: int, action: str, db: Session = Depends(get_db), user
     if job is None:
         raise HTTPException(404)
     job.status = "approved" if action == "approve" else "rejected"
+    if action == "approve":
+        job.approved_at = dt.datetime.now(dt.timezone.utc)
     db.commit()
     return RedirectResponse("/admin", 303)
 

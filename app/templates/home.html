@@ -27,6 +27,12 @@
   {% endif %}
 </section>
 
+{% if newsletter_enabled() %}<section>
+  <h2>New roles in your inbox</h2>
+  <p class="muted">Get a weekly email with newly posted non-profit jobs.</p>
+  {% include "_subscribe_form.html" %}
+</section>{% endif %}
+
 <section class="cta">
   <h2>Hiring for a good cause?</h2>
   <p>Posting is free. Share your mission and reach people who want to help.</p>

@@ -71,3 +71,8 @@ fieldset.choice legend{font-weight:600;padding:0 6px}
 .nav nav a.admin-link{font-weight:700;color:var(--green)}
 .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
 .actions{display:flex;flex-wrap:wrap;gap:12px;margin:8px 0 4px}
+.subscribe{max-width:560px}
+.causes-pick{margin:12px 0}
+.causes-pick summary{cursor:pointer;color:var(--green)}
+.chip.pick{display:inline-flex;gap:6px;align-items:center;cursor:pointer}
+.chip.pick input{width:auto}

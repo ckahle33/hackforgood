@@ -2,6 +2,9 @@ import os
 
 os.environ["DATABASE_URL"] = "sqlite:///./test.db"
 os.environ["ADMIN_EMAILS"] = "admin@example.org"
+os.environ["RESEND_API_KEY"] = ""
+os.environ["MAIL_ADDRESS"] = ""
+os.environ["CRON_SECRET"] = ""
 
 import pytest
 from fastapi.testclient import TestClient

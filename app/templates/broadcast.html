@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Send update &middot; {{ site_name }}{% endblock %}
+{% block robots %}noindex,nofollow{% endblock %}
+{% block content %}
+<section class="narrow">
+  <h1>Send an update</h1>
+  <p class="muted">{{ count }} subscriber{{ '' if count == 1 else 's' }} would receive this. {{ remaining }} sends left today.</p>
+  {% if sent is not none %}<div class="notice">Sent to {{ sent }} subscriber{{ '' if sent == 1 else 's' }}.</div>{% endif %}
+  {% for e in errors %}<p class="error">{{ e }}</p>{% endfor %}
+  <form method="post" class="form">
+    <label>Subject <input name="subject" required maxlength="150" value="{{ v.subject }}"></label>
+    <label>Message (blank line between paragraphs) <textarea name="body" rows="9" required>{{ v.body }}</textarea></label>
+    <label>Audience
+      <select name="cause"><option value="">Everyone</option>{% for c in causes %}<option {{ 'selected' if v.cause == c }}>{{ c }}</option>{% endfor %}</select></label>
+    <button class="btn">Send now</button>
+  </form>
+</section>
+{% endblock %}

@@ -13,6 +13,11 @@ class Settings(BaseSettings):
     supabase_url: str = ""
     supabase_anon_key: str = ""
     admin_emails: str = ""
+    resend_api_key: str = ""
+    mail_from: str = "Hack for Good <jobs@hackforgood.dev>"
+    mail_address: str = ""  # physical mailing address; required in commercial email (CAN-SPAM)
+    mail_daily_limit: int = 100  # Resend free tier
+    cron_secret: str = ""
     https_only: bool = False
 
     @property

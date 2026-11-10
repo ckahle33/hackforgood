@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} &middot; {{ site_name }}{% endblock %}
+{% block robots %}noindex,nofollow{% endblock %}
+{% block content %}
+<section class="narrow">
+  <h1>{{ title }}</h1>
+  {% if message %}<p>{{ message }}</p>
+  {% else %}<p>If that address can be subscribed, we've sent a confirmation link. It only takes one click, and you won't hear from us until you confirm.</p>{% endif %}
+  <p><a href="/jobs">Browse jobs</a></p>
+</section>
+{% endblock %}

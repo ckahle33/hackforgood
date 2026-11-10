@@ -55,6 +55,7 @@ class Job(Base):
     salary_max: Mapped[int | None] = mapped_column(Integer, nullable=True)
     salary_period: Mapped[str | None] = mapped_column(String, nullable=True)  # HOUR | MONTH | YEAR (USD)
     expires_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    approved_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
     remote: Mapped[bool] = mapped_column(Boolean, default=False)
     apply_url: Mapped[str] = mapped_column(String)
     accept_applications: Mapped[bool] = mapped_column(Boolean, default=False, server_default="false")
@@ -97,3 +98,33 @@ class Application(Base):
     status: Mapped[str] = mapped_column(String, default="new")
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=now)
     job: Mapped[Job] = relationship(back_populates="applications")
+
+
+class Subscriber(Base):
+    __tablename__ = "subscribers"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email: Mapped[str] = mapped_column(String, unique=True)
+    causes: Mapped[str] = mapped_column(String, default="")  # "|"-separated; empty means all causes
+    token: Mapped[str] = mapped_column(String, unique=True, index=True)  # confirm / unsubscribe capability
+    confirmed_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    unsubscribed_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_sent_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    confirm_sent_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+    @property
+    def active(self) -> bool:
+        return self.confirmed_at is not None and self.unsubscribed_at is None
+
+    @property
+    def cause_list(self) -> list[str]:
+        return [c for c in self.causes.split("|") if c]
+
+
+class EmailLog(Base):
+    """Counts emails sent, so we stay inside the provider's daily limit."""
+    __tablename__ = "email_log"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    kind: Mapped[str] = mapped_column(String)  # confirm | digest | broadcast
+    count: Mapped[int] = mapped_column(Integer)
+    sent_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=now, index=True)

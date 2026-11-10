@@ -6,6 +6,8 @@ REGION=us-central1
 SERVICE=hackforgood
 
 set -a; source .env; set +a
+# DEPLOY_NO_MAIL=1 keeps the newsletter hidden (it is enabled by MAIL_ADDRESS)
+[ "${DEPLOY_NO_MAIL:-}" = 1 ] && unset MAIL_ADDRESS || true
 : "${SUPABASE_URL:?}" "${SUPABASE_ANON_KEY:?}" "${DATABASE_URL:?}" "${SECRET_KEY:?}"
 
 gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com \
@@ -15,7 +17,7 @@ gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregi
 ENVFILE=$(mktemp); trap 'rm -f "$ENVFILE"' EXIT
 python3 - "$ENVFILE" <<'PY'
 import json, os, sys
-keys = ["SITE_URL", "SUPABASE_URL", "SUPABASE_ANON_KEY", "DATABASE_URL", "SECRET_KEY", "ADMIN_EMAILS", "SITE_NAME"]
+keys = ["SITE_URL", "SUPABASE_URL", "SUPABASE_ANON_KEY", "DATABASE_URL", "SECRET_KEY", "ADMIN_EMAILS", "SITE_NAME", "RESEND_API_KEY", "MAIL_FROM", "MAIL_ADDRESS", "CRON_SECRET"]
 with open(sys.argv[1], "w") as f:
     for k in keys:
         if os.environ.get(k):

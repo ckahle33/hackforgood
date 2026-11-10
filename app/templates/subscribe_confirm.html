@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Confirm subscription &middot; {{ site_name }}{% endblock %}
+{% block robots %}noindex,nofollow{% endblock %}
+{% block content %}
+<section class="narrow">
+  <h1>Confirm your subscription</h1>
+  <p>Subscribe <strong>{{ sub.email }}</strong> to new-role emails from {{ site_name }}?</p>
+  <form method="post"><button class="btn">Yes, subscribe me</button></form>
+</section>
+{% endblock %}

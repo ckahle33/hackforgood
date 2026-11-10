@@ -21,4 +21,5 @@
 {% else %}
   <div class="empty">No jobs match. Try clearing a filter.</div>
 {% endif %}
+{% if newsletter_enabled() %}<section><h2>Don't miss new roles</h2>{% include "_subscribe_form.html" %}</section>{% endif %}
 {% endblock %}

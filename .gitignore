@@ -6,3 +6,9 @@ __pycache__/
 !.env.example
 .DS_Store
 *.db
+
+*.pem
+*.key
+*.sqlite3
+service-account*.json
+*.log

@@ -1,0 +1,14 @@
+<form method="post" action="/subscribe" class="subscribe">
+  <div class="search">
+    <input type="email" name="email" required maxlength="200" placeholder="you@example.com" aria-label="Email address" autocomplete="email">
+    <button class="btn">Get new roles</button>
+  </div>
+  <details class="causes-pick">
+    <summary>Only certain causes? (optional)</summary>
+    <div class="chips">
+      {% for c in causes %}<label class="chip pick"><input type="checkbox" name="causes" value="{{ c }}"> {{ c }}</label>{% endfor %}
+    </div>
+  </details>
+  <input name="website" class="hp" tabindex="-1" autocomplete="off" aria-hidden="true">
+  <p class="muted small">One email a week, only when there are new roles. Unsubscribe any time.</p>
+</form>
